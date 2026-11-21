@@ -2,6 +2,7 @@ package com.tvlauncher.app
 
 import android.app.Activity
 import android.app.admin.DevicePolicyManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -10,6 +11,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Base64
@@ -17,6 +19,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.webkit.ConsoleMessage
 import android.webkit.JavascriptInterface
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -31,6 +34,8 @@ class MainActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var dpm: DevicePolicyManager
     private lateinit var admin: ComponentName
+    private var filePathCallback: ValueCallback<Array<Uri>>? = null
+    private val FILE_CHOOSER_REQUEST = 1001
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,13 +72,67 @@ class MainActivity : Activity() {
                     Log.d("LAUNCHER-JS", "${msg.message()} @${msg.lineNumber()}")
                     return true
                 }
+
+                // ВАЖНО: без этого <input type="file"> в WebView не работает
+                override fun onShowFileChooser(
+                    view: WebView?,
+                    callback: ValueCallback<Array<Uri>>?,
+                    params: FileChooserParams?
+                ): Boolean {
+                    filePathCallback?.onReceiveValue(null)
+                    filePathCallback = callback
+
+                    val allowMultiple = params?.mode == FileChooserParams.MODE_OPEN_MULTIPLE
+
+                    // MIME-фильтр: WebView передаёт типы из атрибута accept
+                    val mimeTypes = params?.acceptTypes?.filter { it.isNotBlank() } ?: emptyList()
+                    val mime = when {
+                        mimeTypes.isEmpty() -> "*/*"
+                        mimeTypes.any { it.startsWith("image/") } -> "image/*"
+                        mimeTypes.any { it.startsWith("audio/") } -> "audio/*"
+                        else -> "*/*"
+                    }
+
+                    // На Android TV DocumentsUI может отсутствовать — пробуем несколько вариантов
+                    val intents = listOf(
+                        Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = mime
+                            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple)
+                        },
+                        Intent(Intent.ACTION_GET_CONTENT).apply {
+                            addCategory(Intent.CATEGORY_OPENABLE)
+                            type = mime
+                            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, allowMultiple)
+                        }
+                    )
+
+                    for (base in intents) {
+                        try {
+                            startActivityForResult(
+                                Intent.createChooser(base, "Выберите файл"),
+                                FILE_CHOOSER_REQUEST
+                            )
+                            return true
+                        } catch (e: ActivityNotFoundException) {
+                            Log.w("LAUNCHER", "Нет обработчика для ${base.action}")
+                        }
+                    }
+
+                    filePathCallback = null
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Установите файловый менеджер (X-plore, Total Commander)",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return false
+                }
             }
 
             webView.addJavascriptInterface(Bridge(this, webView), "Android")
             webView.loadUrl("file:///android_asset/launcher.html")
             setContentView(webView)
 
-            // Kiosk включаем ТОЛЬКО если реально Device Owner
             if (dpm.isDeviceOwnerApp(packageName)) {
                 try {
                     dpm.setLockTaskPackages(admin, arrayOf(packageName))
@@ -88,7 +147,31 @@ class MainActivity : Activity() {
         }
     }
 
-    override fun onBackPressed() { /* блокируем */ }
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (requestCode == FILE_CHOOSER_REQUEST) {
+            val cb = filePathCallback ?: return
+            filePathCallback = null
+
+            if (resultCode != Activity.RESULT_OK) {
+                cb.onReceiveValue(null)
+                return
+            }
+
+            val results: Array<Uri>? = when {
+                data?.clipData != null -> {
+                    val cd = data.clipData!!
+                    Array(cd.itemCount) { i -> cd.getItemAt(i).uri }
+                }
+                data?.data != null -> arrayOf(data.data!!)
+                else -> null
+            }
+            cb.onReceiveValue(results)
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
+    }
+
+    override fun onBackPressed() { }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) return true
