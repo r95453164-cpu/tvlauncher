@@ -73,7 +73,6 @@ class MainActivity : Activity() {
                     return true
                 }
 
-                // ВАЖНО: без этого <input type="file"> в WebView не работает
                 override fun onShowFileChooser(
                     view: WebView?,
                     callback: ValueCallback<Array<Uri>>?,
@@ -83,8 +82,6 @@ class MainActivity : Activity() {
                     filePathCallback = callback
 
                     val allowMultiple = params?.mode == FileChooserParams.MODE_OPEN_MULTIPLE
-
-                    // MIME-фильтр: WebView передаёт типы из атрибута accept
                     val mimeTypes = params?.acceptTypes?.filter { it.isNotBlank() } ?: emptyList()
                     val mime = when {
                         mimeTypes.isEmpty() -> "*/*"
@@ -93,7 +90,6 @@ class MainActivity : Activity() {
                         else -> "*/*"
                     }
 
-                    // На Android TV DocumentsUI может отсутствовать — пробуем несколько вариантов
                     val intents = listOf(
                         Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                             addCategory(Intent.CATEGORY_OPENABLE)
@@ -151,12 +147,9 @@ class MainActivity : Activity() {
         if (requestCode == FILE_CHOOSER_REQUEST) {
             val cb = filePathCallback ?: return
             filePathCallback = null
-
             if (resultCode != Activity.RESULT_OK) {
-                cb.onReceiveValue(null)
-                return
+                cb.onReceiveValue(null); return
             }
-
             val results: Array<Uri>? = when {
                 data?.clipData != null -> {
                     val cd = data.clipData!!
@@ -181,6 +174,37 @@ class MainActivity : Activity() {
 
 class Bridge(private val ctx: Context, private val webView: WebView) {
 
+    // ============ СИСТЕМНЫЕ НАСТРОЙКИ ANDROID ============
+    private fun openSettingsAction(action: String, fallback: String? = null) {
+        try {
+            ctx.startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: Exception) {
+            Log.w("LAUNCHER", "Не удалось открыть $action: ${e.message}")
+            if (fallback != null) {
+                try {
+                    ctx.startActivity(Intent(fallback).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    return
+                } catch (_: Exception) {}
+            }
+            try {
+                ctx.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (_: Exception) {}
+        }
+    }
+
+    @JavascriptInterface fun openWifiSettings() = openSettingsAction(Settings.ACTION_WIFI_SETTINGS)
+    @JavascriptInterface fun openBluetoothSettings() = openSettingsAction(Settings.ACTION_BLUETOOTH_SETTINGS)
+    @JavascriptInterface fun openDisplaySettings() = openSettingsAction(Settings.ACTION_DISPLAY_SETTINGS)
+    @JavascriptInterface fun openSoundSettings() = openSettingsAction(Settings.ACTION_SOUND_SETTINGS)
+    @JavascriptInterface fun openAppsSettings() = openSettingsAction(Settings.ACTION_APPLICATION_SETTINGS)
+    @JavascriptInterface fun openDateSettings() = openSettingsAction(Settings.ACTION_DATE_SETTINGS)
+    @JavascriptInterface fun openAboutSettings() = openSettingsAction(Settings.ACTION_DEVICE_INFO_SETTINGS)
+    @JavascriptInterface fun openLanguageSettings() = openSettingsAction(Settings.ACTION_LOCALE_SETTINGS)
+    @JavascriptInterface fun openInputSettings() = openSettingsAction(Settings.ACTION_INPUT_METHOD_SETTINGS)
+    @JavascriptInterface fun openNetworkSettings() = openSettingsAction("android.settings.NETWORK_OPERATOR_SETTINGS", Settings.ACTION_WIRELESS_SETTINGS)
+    @JavascriptInterface fun openSystemSettings() = openSettingsAction(Settings.ACTION_SETTINGS)
+
+    // ============ ПРИЛОЖЕНИЯ ============
     @JavascriptInterface
     fun getInstalledApps(): String {
         return try {
@@ -258,13 +282,6 @@ class Bridge(private val ctx: Context, private val webView: WebView) {
     fun runAsRoot(cmd: String): String = try {
         Runtime.getRuntime().exec(arrayOf("su", "-c", cmd)).inputStream.bufferedReader().readText()
     } catch (_: Exception) { "" }
-
-    @JavascriptInterface
-    fun openSettings() {
-        try {
-            ctx.startActivity(Intent(Settings.ACTION_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        } catch (_: Exception) {}
-    }
 
     private fun drawableToBitmap(drawable: Drawable, size: Int): Bitmap {
         if (drawable is BitmapDrawable && drawable.bitmap != null) {
