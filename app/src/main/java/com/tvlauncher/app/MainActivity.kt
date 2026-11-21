@@ -1,5 +1,6 @@
 package com.tvlauncher.app
 
+import android.app.Activity
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -22,12 +23,11 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
     private lateinit var webView: WebView
     private lateinit var dpm: DevicePolicyManager
     private lateinit var admin: ComponentName
