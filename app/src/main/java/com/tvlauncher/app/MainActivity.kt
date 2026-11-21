@@ -49,8 +49,7 @@ class MainActivity : AppCompatActivity() {
             if (dpm.isDeviceOwnerApp(packageName)) {
                 dpm.setLockTaskPackages(admin, arrayOf(packageName))
                 startLockTask()
-            } else if (dpm.isDeviceOwnerApp(packageName.not())) {
-                // If we're not device owner, still try regular lock task (requires user pin)
+            } else {
                 startLockTask()
             }
         } catch (e: Exception) {
@@ -58,10 +57,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Block Back button completely
-    override fun onBackPressed() { /* nothing */ }
+    override fun onBackPressed() { /* блокируем */ }
 
-    // Block Back key from hardware
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) return true
         return super.onKeyDown(keyCode, event)
@@ -114,8 +111,16 @@ class Bridge(private val ctx: Context, private val webView: WebView) {
         if (ctx is MainActivity) {
             try {
                 ctx.stopLockTask()
-                Toast.makeText(ctx, "Режим киоска отключён", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) { }
+                val dpm = ctx.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+                val admin = ComponentName(ctx, MyDeviceAdminReceiver::class.java)
+                if (dpm.isDeviceOwnerApp(ctx.packageName)) {
+                    dpm.clearPackagePersistentPreferredActivities(admin, ctx.packageName)
+                }
+                Toast.makeText(ctx, "Лаунчер отключён. Нажмите Home для выбора оболочки.", Toast.LENGTH_LONG).show()
+                ctx.startActivity(Intent(Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e: Exception) {
+                Toast.makeText(ctx, "Ошибка выхода: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 
