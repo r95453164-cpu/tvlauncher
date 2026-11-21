@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Glass Launcher</title>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@200;300;400;500;600;700&family=Bebas+Neue&family=Big+Shoulders+Display:wght@100..900&family=Inter:wght@100..900&family=League+Gothic&family=Oswald:wght@200..700&family=Unbounded:wght@200..900&family=Manrope:wght@200..800&family=Montserrat:wght@100..900&family=Rubik:wght@300..900&family=Nunito:wght@200..1000&family=Comfortaa:wght@300..700&family=Exo+2:wght@100..900&family=Playfair+Display:wght@400..900&display=swap" rel="stylesheet">
 <style>
-:root{--g1:rgba(255,255,255,.25);--g2:rgba(255,255,255,.1);--acc:#cfd2d6;--bf:blur(28px) saturate(1.6);--a:1}
+:root{--g1:rgba(255,255,255,.25);--g2:rgba(255,255,255,.1);--acc:#cfd2d6;--a:1}
 *{box-sizing:border-box;margin:0;outline:0}
 html,body{height:100%;overflow:hidden;background:#000;color:#fff;font:400 clamp(14px,2vh,24px)/1.3 var(--uf),system-ui,sans-serif;user-select:none}
 .L{position:fixed;inset:0;pointer-events:none}
@@ -138,10 +138,20 @@ const ev=(k,i,t,m)=>S[k]&&toast(i,t,m);
 addEventListener('online',()=>ev('n_wifi','📶','Wi‑Fi подключён','Сеть доступна'));
 addEventListener('offline',()=>ev('n_wifi','🚫','Wi‑Fi отключён','Нет соединения'));
 
+/* --- Иконки --- */
 const IC={
-set:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>'};
-const NM={set:'Настройки'};
-const IC_EXIT='<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>';
+  set:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
+  android:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  wifi:'<path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1.5" fill="currentColor"/>',
+  bt:'<path d="M6.5 6.5l11 11L12 22V2l5.5 5.5-11 11"/>',
+  tv:'<rect x="3" y="5" width="18" height="12" rx="2.5"/><path d="M8 21h8"/>',
+  vol:'<path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
+  apps:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a13 13 0 0 1 0 18M12 3a13 13 0 0 0 0 18"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  exit:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'
+};
 const dock=$('#dock');
 let ANDROID_APPS=[],exitArmed=0;
 
@@ -153,17 +163,17 @@ function loadApps(){
 }
 
 function dk(){
+  let html='';
   if(ANDROID_APPS.length){
-    let html=ANDROID_APPS.map(app=>`<button class="ic" data-pkg="${app.package}" title="${app.name}">${
+    html=ANDROID_APPS.map(app=>`<button class="ic" data-pkg="${app.package}" title="${app.name}">${
       app.icon?`<img src="${app.icon}" style="width:76%;height:76%;object-fit:contain;border-radius:18%">`:
               `<span>${app.name[0].toUpperCase()}</span>`}<b>${app.name}</b></button>`).join('');
-    html+=`<button class="ic" data-id="set"><svg viewBox="0 0 24 24">${IC.set}</svg><b>Настройки</b></button>`;
-    html+=`<button class="ic" data-id="exit"><svg viewBox="0 0 24 24" stroke="#ff8080">${IC_EXIT}</svg><b>Выход</b></button>`;
-    dock.innerHTML=html;
-  } else {
-    const a=[['set','Настройки',IC.set],['exit','Выход',IC_EXIT]];
-    dock.innerHTML=a.map(([k,n,p])=>`<button class="ic" data-id="${k}"><svg viewBox="0 0 24 24"${k=='exit'?' stroke="#ff8080"':''}>${p}</svg><b>${n}</b></button>`).join('');
   }
+  // Системные кнопки — всегда в конце дока
+  html+=`<button class="ic" data-id="set"><svg viewBox="0 0 24 24">${IC.set}</svg><b>Настройки</b></button>`;
+  html+=`<button class="ic" data-id="android"><svg viewBox="0 0 24 24">${IC.android}</svg><b>Android</b></button>`;
+  html+=`<button class="ic" data-id="exit"><svg viewBox="0 0 24 24" stroke="#ff8080">${IC.exit}</svg><b>Выход</b></button>`;
+  dock.innerHTML=html;
 }
 
 dock.onclick=e=>{
@@ -172,6 +182,11 @@ dock.onclick=e=>{
   if(pkg){try{window.Android?.launchApp(pkg)}catch(err){toast('⚠️','Не удалось запустить',pkg)}return}
   const k=b.dataset.id;
   if(k=='set')return tg();
+  if(k=='android'){
+    if(window.Android?.openSystemSettings) window.Android.openSystemSettings();
+    else toast('ℹ️','Только в APK','Откройте лаунчер как Android-приложение');
+    return;
+  }
   if(k=='exit'){
     if(window.Android?.exitKiosk){
       if(Date.now()<exitArmed){window.Android.exitKiosk();exitArmed=0}
@@ -190,7 +205,7 @@ function wu(){const d=new Date(),q=k=>{const e=$(`[data-w=${k}]`);e.style.displa
  q('cal').innerHTML=`<div class="cal"><b>${d.toLocaleDateString('ru',{month:'long'})}</b>${[...'ПВСЧПСВ'].map(x=>`<i>${x}</i>`).join('')}${'<i></i>'.repeat(f)}${Array.from({length:n},(_,i)=>`<i class="${i+1==d.getDate()?'t':''}">${i+1}</i>`).join('')}</div>`;
  q('clk').innerHTML=`<svg viewBox="0 0 100 100" stroke="var(--ic)" stroke-linecap="round" fill="none"><circle cx="50" cy="50" r="46" stroke-width="1" opacity=".5"/><circle cx="50" cy="50" r="41" stroke-width="4" stroke-dasharray="1 20.46" opacity=".6"/>${ln(d.getHours()%12*30+d.getMinutes()/2,24,3)}${ln(d.getMinutes()*6,36,2)}${ln(d.getSeconds()*6,40,1)}</svg>`;
  const p=q('ph');p.style.backgroundImage=pi?`url("${pi}")`:'';p.textContent=pi?'':'📷 Выбрать фото';
- }
+}
 $('#wg').onclick=e=>{const w=e.target.closest('.wd');if(!w)return;if(w.dataset.w=='ph')up('image/*',u=>{pi=u;sk('gp',u);wu()})};
 addEventListener('wheel',e=>{rst();if(lk()||$('#set.on')||!vw())return;pg(e.deltaY<0?1:0)},{passive:true});
 addEventListener('focusin',e=>{const t=e.target,c=t.closest?.('#dock,#wg');if(c&&c!=t)c.scrollTo({left:t.offsetLeft-c.clientWidth/2+t.offsetWidth/2,behavior:'smooth'})});
@@ -238,8 +253,11 @@ const up=(a,cb,raw)=>{const i=document.createElement('input');i.type='file';i.ac
 pr=(n,x)=>[n,()=>{S.col=x;[S.h,S.s]=hs(x);ap();build('Цвета')}],
 hs=x=>{const[r,g,b]=[1,3,5].map(i=>parseInt(x.substr(i,2),16)/255),M=Math.max(r,g,b),m=Math.min(r,g,b),d=M-m;let h=0;if(d)h=M==r?((g-b)/d+6)%6:M==g?(b-r)/d+2:(r-g)/d+4;return[Math.round(h*60),Math.round(d?d/(1-Math.abs(M+m-1))*100:0)]},
 FONTS=['Inter','Manrope','Montserrat','Rubik','Nunito','Comfortaa','Exo 2','Playfair Display','Oswald','Unbounded','Bebas Neue','Anton','Barlow Condensed','Big Shoulders Display','League Gothic'],
-lf=(u,a)=>new FontFace('UserFont',`url(${u})`).load().then(f=>{document.fonts.add(f);if(a){S.uf=S.ff='UserFont';S.same=1;ap()}}),
-TABS={
+lf=(u,a)=>new FontFace('UserFont',`url(${u})`).load().then(f=>{document.fonts.add(f);if(a){S.uf=S.ff='UserFont';S.same=1;ap()}});
+
+const A=n=>window.Android?.[n]?.();
+
+const TABS={
 'Обои':'wbr|Яркость обоев|r|.3|1.5|.05;depth|Часы за объектом|t',
 'Часы':'cw|Ширина|r|.4|2.5|.01;ch|Высота|r|.4|2.5|.01;co|Прозрачность|r|.1|1|.01;fw|Толщина|r|100|900|10;w24|24-часовой формат|t',
 'Шрифт':'',
@@ -248,9 +266,11 @@ TABS={
 'Экран':'w_cal|Календарь|t;w_clk|Аналоговые часы|t;w_ph|Фото|t',
 'Плеер':'plr|Плеер на экране блокировки|t',
 'Погода':'wx|Показывать погоду|t;unit|Единицы|s|C,F',
+'Система':'',
 'Анимации':'a|Скорость анимаций|r|0|2|.1;ca|Анимация цифр|t',
-'Ожидание':'idle|Через сколько секунд|r|10|600|5;sdim|Затемнение|r|0|.9|.05'},
-B={
+'Ожидание':'idle|Через сколько секунд|r|10|600|5;sdim|Затемнение|r|0|.9|.05'};
+
+const B={
 'Обои':[...W.map((w,i)=>[w[0],()=>{S.wp=i;bi=fi=null;sk('gb');sk('gf');wp();sv()}]),['Свои обои',()=>up('image/*',u=>{bi=u;sk('gb',u);wp()})]],
 'Шрифт':[...FONTS.map(f=>[f,()=>{S.uf=S.ff=f;S.same=1;ap()},f]),['Свой шрифт (файл)',()=>up('.ttf,.otf,.woff,.woff2',u=>{sk('gt',u);lf(u,1)})]],
 'Часы':[['Как в интерфейсе',()=>{S.same=1;ap()}],...FONTS.map(f=>[f,()=>{S.ff=f;S.same=0;ap()},f])],
@@ -258,9 +278,24 @@ B={
 'Экран':[['Сменить фото',()=>up('image/*',u=>{pi=u;sk('gp',u);wu()})],['Обновить список приложений',()=>{loadApps();toast('🔄','Список приложений','Обновлён')}]],
 'Плеер':[['Добавить песни',pick],['Демо-трек',demo],['Стоп',mstop]],
 'Погода':[['Сменить город',()=>{const q=prompt('Город');q&&find(q)}]],
-'Ожидание':[['Заблокировать сейчас',()=>{shut();go('lock')}],['Сбросить все настройки',()=>{try{localStorage.clear()}catch{}location.reload()}]]},
-tabs=$('#tabs'),mk=(t,o)=>Object.assign(document.createElement(t),o);
+'Система':[
+  ['📶  Wi-Fi',           ()=>A('openWifiSettings')],
+  ['🔵  Bluetooth',       ()=>A('openBluetoothSettings')],
+  ['🌐  Сеть и интернет', ()=>A('openNetworkSettings')],
+  ['🖥  Экран',           ()=>A('openDisplaySettings')],
+  ['🔊  Звук',            ()=>A('openSoundSettings')],
+  ['📱  Приложения',      ()=>A('openAppsSettings')],
+  ['📅  Дата и время',    ()=>A('openDateSettings')],
+  ['⌨️  Клавиатура',      ()=>A('openInputSettings')],
+  ['🌍  Язык',            ()=>A('openLanguageSettings')],
+  ['ℹ️  О системе',       ()=>A('openAboutSettings')],
+  ['⚙️  Все настройки',   ()=>A('openSystemSettings')]
+],
+'Ожидание':[['Заблокировать сейчас',()=>{shut();go('lock')}],['Сбросить все настройки',()=>{try{localStorage.clear()}catch{}location.reload()}]]};
+
+const tabs=$('#tabs'),mk=(t,o)=>Object.assign(document.createElement(t),o);
 Object.keys(TABS).forEach(t=>tabs.append(mk('button',{textContent:t,onclick:()=>build(t)})));
+
 function build(t){[...tabs.children].forEach(b=>b.classList.toggle('on',b.textContent==t));const rw=$('#rows');rw.innerHTML='';
  if(B[t]){const d=mk('div',{className:'bs'});B[t].forEach(([l,f,ff])=>d.append(mk('button',{textContent:l,onclick:f,style:ff?`font-family:'${ff}'`:''})));rw.append(d)}
  for(const x of (TABS[t]||'').split(';')){if(!x)continue;const[k,l,ty,a,b,s]=x.split('|'),r=mk('label',{className:'r'}),o=mk('output'),i=ty=='r'?mk('input',{type:'range',min:a,max:b,step:s,value:S[k]}):ty=='c'?mk('input',{type:'color',value:S[k]}):ty=='t'?mk('input',{type:'checkbox',checked:!!S[k]}):mk('select');
