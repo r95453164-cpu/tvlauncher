@@ -14,6 +14,12 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools' # Явно указываем пакет, пропуская удалённый 'tools'
+
+      - name: Install required SDK components
+        run: |
+          sdkmanager "platforms;android-34" "build-tools;34.0.0"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
